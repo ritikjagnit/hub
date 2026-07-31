@@ -1,0 +1,17 @@
+{
+  "name": "project-management-system",
+  "version": "1.0.0",
+  "description": "Full-Stack Project Management System",
+  "main": "index.js",
+  "scripts": {
+    "bootstrap": "npm install --prefix client && npm install --prefix server",
+    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma",
+    "build": "npm install --prefix client && npm run build --prefix client && npm install --prefix server",
+    "dev": "concurrently \"nodemon server/server.js\" \"npm run dev --prefix client\"",
+    "start": "node server/server.js"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.0"
+  }
+}

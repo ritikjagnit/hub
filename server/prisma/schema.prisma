@@ -1,0 +1,501 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  user_id   Int?
+  date      DateTime
+  check_in  String
+  check_out String?
+  status    String?  @default("present")
+  Users     Users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, date], map: "sqlite_autoindex_Attendance_1")
+}
+
+model Comments {
+  id         Int       @id @default(autoincrement())
+  task_id    Int?
+  user_id    Int?
+  content    String
+  created_at DateTime? @default(now())
+  Users      Users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tasks      Tasks?    @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model Documents {
+  id               Int               @id @default(autoincrement())
+  project_id       Int?
+  file_name        String
+  file_path        String
+  folder_name      String?
+  uploaded_by      Int?
+  uploaded_at      DateTime?         @default(now())
+  Users            Users?            @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
+  Projects         Projects?         @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  DocumentVersions DocumentVersion[]
+}
+
+model Messages {
+  id         Int       @id @default(autoincrement())
+  sender_id  Int?
+  project_id Int?
+  content    String
+  created_at DateTime? @default(now())
+  Projects   Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Users      Users?    @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model ProjectMembers {
+  id         Int       @id @default(autoincrement())
+  project_id Int?
+  user_id    Int?
+  Users      Users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Projects   Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([project_id, user_id], map: "sqlite_autoindex_ProjectMembers_1")
+}
+
+model Projects {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  status         String?          @default("pending")
+  deadline       DateTime?
+  manager_id     Int?
+  created_at     DateTime?        @default(now())
+  completed_at   DateTime?
+  
+  organization_id Int?
+  budget          Float?
+  client_id       Int?
+  priority        String?          @default("medium")
+  start_date      DateTime?
+  template_name   String?
+  
+  Organization   Organization?    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  Client         Users?           @relation("ClientProjects", fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  Documents      Documents[]
+  Messages       Messages[]
+  ProjectMembers ProjectMembers[]
+  Users          Users?           @relation(fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Tasks          Tasks[]
+  TimeLogs       TimeLogs[]
+  Meetings       Meeting[]
+  Invoices       Invoice[]
+  Expenses       Expense[]
+  Thesis         Thesis[]
+  DailyLog       DailyLog[]
+  EvaluationMarks EvaluationMarks[]
+}
+
+model Tasks {
+  id           Int        @id @default(autoincrement())
+  title        String
+  description  String?
+  priority     String?    @default("medium")
+  status       String?    @default("pending")
+  due_date     DateTime?
+  assigned_to  Int?
+  project_id   Int?
+  created_at   DateTime?  @default(now())
+  completed_at DateTime?
+  subtasks     String?
+  
+  start_date   DateTime?
+  milestone    Boolean    @default(false)
+  billable     Boolean    @default(false)
+  recurring    Boolean    @default(false)
+  labels       String?
+  checklist    String?
+
+  Comments     Comments[]
+  Projects     Projects?  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Users        Users?     @relation(fields: [assigned_to], references: [id], onUpdate: NoAction)
+  TimeLogs     TimeLogs[]
+  
+  Dependencies TaskDependency[] @relation("TaskDependencies")
+  DependsOn    TaskDependency[] @relation("TaskDependsOn")
+  TaskRecurring TaskRecurring[]
+  AcademicTaskDetail AcademicTaskDetail?
+}
+
+model TimeLogs {
+  id               Int       @id @default(autoincrement())
+  user_id          Int?
+  task_id          Int?
+  project_id       Int?
+  duration_seconds Int
+  description      String?
+  logged_at        DateTime? @default(now())
+  
+  billable         Boolean   @default(false)
+  billing_rate     Float?
+
+  Projects         Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Tasks            Tasks?    @relation(fields: [task_id], references: [id], onUpdate: NoAction)
+  Users            Users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model Users {
+  id             Int              @id @default(autoincrement())
+  username       String
+  email          String           @unique(map: "sqlite_autoindex_Users_1")
+  password       String
+  role           String
+  created_at     DateTime?        @default(now())
+  on_team        Boolean          @default(true)
+  
+  organization_id Int?
+  team_id         Int?
+  department_id   Int?
+  phone           String?
+  is_verified     Boolean          @default(false)
+  verification_token String?
+  reset_token     String?
+  reset_token_expiry DateTime?
+
+  Organization   Organization?    @relation(fields: [organization_id], references: [id])
+  Team           Team?            @relation(fields: [team_id], references: [id])
+  Department     Department?      @relation(fields: [department_id], references: [id])
+  ClientProjects Projects[]       @relation("ClientProjects")
+
+  Attendance     Attendance[]
+  Comments       Comments[]
+  Documents      Documents[]
+  Messages       Messages[]
+  ProjectMembers ProjectMembers[]
+  Projects       Projects[]
+  Tasks          Tasks[]
+  TimeLogs       TimeLogs[]
+  
+  DocumentVersions DocumentVersion[]
+  Announcements   Announcement[]
+  AuditLogs       AuditLog[]
+  Notifications   Notification[]
+  Invoices        Invoice[]
+  Expenses        Expense[]
+  MeetingsCreated Meeting[]
+  MeetingsAttended MeetingAttendee[]
+  
+  ThesisGuide     Thesis[]          @relation("GuideThesis")
+  ThesisStudent   Thesis[]          @relation("StudentThesis")
+  ThesisComments  ThesisComment[]
+  DailyLogs       DailyLog[]
+  DailyLogsReviewed DailyLog[]      @relation("DailyLogReviewer")
+  EvaluationMarks EvaluationMarks[] @relation("StudentEvaluation")
+  EvaluationMarksGraded EvaluationMarks[] @relation("TeacherEvaluation")
+  AcademicCertificates AcademicCertificate[]
+  ResearchPapers  ResearchPaper[]
+  ResearchPaperVerified ResearchPaper[] @relation("ResearchPaperVerifier")
+  ResearchBookmarks ResearchBookmark[]
+}
+
+model Invite {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  role       String   @default("member")
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+}
+
+model Organization {
+  id         Int       @id @default(autoincrement())
+  name       String
+  created_at DateTime? @default(now())
+  Users      Users[]
+  Projects   Projects[]
+  Teams      Team[]
+  Departments Department[]
+}
+
+model Team {
+  id              Int           @id @default(autoincrement())
+  name            String
+  organization_id Int?
+  created_at      DateTime?     @default(now())
+  Organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  Users           Users[]
+}
+
+model Department {
+  id              Int           @id @default(autoincrement())
+  name            String
+  organization_id Int?
+  created_at      DateTime?     @default(now())
+  Organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  Users           Users[]
+  Thesis          Thesis[]
+}
+
+model TaskDependency {
+  id                 Int   @id @default(autoincrement())
+  task_id            Int
+  depends_on_task_id Int
+  Task               Tasks @relation("TaskDependencies", fields: [task_id], references: [id], onDelete: Cascade)
+  DependsOnTask      Tasks @relation("TaskDependsOn", fields: [depends_on_task_id], references: [id], onDelete: Cascade)
+}
+
+model TaskRecurring {
+  id        Int      @id @default(autoincrement())
+  task_id   Int
+  frequency String
+  next_run  DateTime
+  Tasks     Tasks    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  title      String
+  message    String
+  type       String    @default("info")
+  is_read    Boolean   @default(false)
+  created_at DateTime? @default(now())
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Meeting {
+  id           Int               @id @default(autoincrement())
+  title        String
+  agenda       String?
+  notes        String?
+  action_items String?
+  start_time   DateTime
+  end_time     DateTime
+  project_id   Int?
+  created_by   Int?
+  created_at   DateTime?         @default(now())
+  Projects     Projects?         @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  Users        Users?            @relation(fields: [created_by], references: [id], onDelete: NoAction)
+  Attendees    MeetingAttendee[]
+}
+
+model MeetingAttendee {
+  id         Int     @id @default(autoincrement())
+  meeting_id Int
+  user_id    Int
+  Meeting    Meeting @relation(fields: [meeting_id], references: [id], onDelete: Cascade)
+  Users      Users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model DocumentVersion {
+  id          Int       @id @default(autoincrement())
+  document_id Int
+  version     Int
+  file_path   String
+  file_name   String?
+  uploaded_by Int?
+  uploaded_at DateTime? @default(now())
+  Documents   Documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  Users       Users?    @relation(fields: [uploaded_by], references: [id], onDelete: NoAction)
+}
+
+model Announcement {
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String
+  created_by Int?
+  created_at DateTime? @default(now())
+  Users      Users?    @relation(fields: [created_by], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  action     String
+  details    String?
+  created_at DateTime? @default(now())
+  Users      Users?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+}
+
+model Invoice {
+  id             Int       @id @default(autoincrement())
+  invoice_number String    @unique
+  project_id     Int?
+  client_id      Int?
+  amount         Float
+  status         String    @default("unpaid")
+  issue_date     DateTime
+  due_date       DateTime
+  created_at     DateTime? @default(now())
+  Projects       Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  Client         Users?    @relation(fields: [client_id], references: [id], onDelete: NoAction)
+}
+
+model Expense {
+  id          Int       @id @default(autoincrement())
+  project_id  Int?
+  user_id     Int?
+  amount      Float
+  description String?
+  category    String?
+  logged_at   DateTime? @default(now())
+  Projects    Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  Users       Users?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+}
+
+model Thesis {
+  id                     Int             @id @default(autoincrement())
+  title                  String
+  abstract               String?
+  problem_statement      String?
+  objectives             String?
+  literature_review      String?
+  methodology            String?
+  architecture           String?
+  flowchart_path         String?
+  implementation_details String?
+  testing_details        String?
+  results                String?
+  future_scope           String?
+  references             String?
+  keywords               String?
+  status                 String          @default("draft") // draft, submitted, under_review, approved, rejected, revision_required
+  guide_id               Int?
+  student_id             Int?
+  project_id             Int?
+  department_id          Int?
+  submission_date        DateTime?
+  created_at             DateTime        @default(now())
+  updated_at             DateTime        @updatedAt
+
+  Guide                  Users?          @relation("GuideThesis", fields: [guide_id], references: [id])
+  Student                Users?          @relation("StudentThesis", fields: [student_id], references: [id])
+  Projects               Projects?       @relation(fields: [project_id], references: [id])
+  Department             Department?     @relation(fields: [department_id], references: [id])
+  Versions               ThesisVersion[]
+  Comments               ThesisComment[]
+}
+
+model ThesisVersion {
+  id             Int      @id @default(autoincrement())
+  thesis_id      Int
+  version        Int
+  title          String
+  abstract       String?
+  status         String
+  file_path      String?
+  file_name      String?
+  updated_by     Int?
+  change_summary String?
+  created_at     DateTime @default(now())
+
+  Thesis         Thesis   @relation(fields: [thesis_id], references: [id], onDelete: Cascade)
+}
+
+model ThesisComment {
+  id         Int      @id @default(autoincrement())
+  thesis_id  Int
+  user_id    Int
+  content    String
+  section    String?  // e.g. "Abstract", "Methodology"
+  created_at DateTime @default(now())
+
+  Thesis     Thesis   @relation(fields: [thesis_id], references: [id], onDelete: Cascade)
+  Users      Users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model DailyLog {
+  id              Int       @id @default(autoincrement())
+  student_id      Int
+  project_id      Int?
+  date            DateTime  @default(now())
+  today_work      String
+  hours_worked    Float
+  screenshot_path String?
+  github_link     String?
+  problems_faced  String?
+  tomorrow_plan   String?
+  status          String    @default("pending") // pending, approved, rejected
+  feedback        String?
+  reviewed_by     Int?
+  reviewed_at     DateTime?
+
+  Student         Users     @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  Projects        Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  Reviewer        Users?    @relation("DailyLogReviewer", fields: [reviewed_by], references: [id])
+}
+
+model AcademicTaskDetail {
+  id               Int     @id @default(autoincrement())
+  task_id          Int     @unique
+  task_type        String? // Chapter Writing, Coding, Research, Presentation, Documentation, Paper Reading, Testing, Meeting
+  marks            Float?
+  rubric           String?
+  estimated_hours  Float?
+  actual_hours     Float?
+  progress_percent Float?  @default(0.0)
+
+  Tasks            Tasks   @relation(fields: [task_id], references: [id], onDelete: Cascade)
+}
+
+model EvaluationMarks {
+  id                 Int      @id @default(autoincrement())
+  student_id         Int
+  project_id         Int?
+  guide_marks        Float?
+  presentation_marks Float?
+  documentation_marks Float?
+  coding_marks       Float?
+  attendance_marks   Float?
+  final_marks        Float?
+  comments           String?
+  rubric_evaluation  String?  // JSON string
+  graded_by          Int?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  Student            Users    @relation("StudentEvaluation", fields: [student_id], references: [id], onDelete: Cascade)
+  Projects           Projects? @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  Teacher            Users?   @relation("TeacherEvaluation", fields: [graded_by], references: [id])
+}
+
+model AcademicCertificate {
+  id               Int      @id @default(autoincrement())
+  student_id       Int
+  certificate_type String   // completion, participation, internship
+  issue_date       DateTime @default(now())
+  certificate_uuid String   @unique // for QR code lookup verification
+  qr_code_path     String?
+  file_path        String?
+
+  Student          Users    @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+model ResearchPaper {
+  id          Int      @id @default(autoincrement())
+  title       String
+  authors     String?
+  journal     String?
+  year        Int?
+  abstract    String?
+  file_path   String
+  uploaded_by Int
+  category    String?
+  status      String   @default("pending") // pending, approved, rejected
+  verified_by Int?
+  created_at  DateTime @default(now())
+
+  Uploader    Users    @relation(fields: [uploaded_by], references: [id], onDelete: Cascade)
+  Verifier    Users?   @relation("ResearchPaperVerifier", fields: [verified_by], references: [id])
+  Bookmarks   ResearchBookmark[]
+}
+
+model ResearchBookmark {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  paper_id   Int
+  created_at DateTime @default(now())
+
+  Users      Users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Paper      ResearchPaper @relation(fields: [paper_id], references: [id], onDelete: Cascade)
+}
