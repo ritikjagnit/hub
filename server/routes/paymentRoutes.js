@@ -5,11 +5,13 @@ const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazy Razorpay instance helper (prevents app crash when env vars missing)
+const getRazorpay = () => {
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
+  });
+};
 
 // Plan definitions (in paise — 1 INR = 100 paise)
 const PLANS = {
@@ -41,6 +43,7 @@ router.post('/create-order', async (req, res) => {
   const amountPaise = selectedPlan.amountINR * 100; // convert to paise
 
   try {
+    const razorpay = getRazorpay();
     const order = await razorpay.orders.create({
       amount: amountPaise,
       currency: 'INR',
