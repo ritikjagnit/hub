@@ -8,5 +8,5 @@ export const getSocketUrl = () => {
     const port = window.location.port === '5173' ? '5000' : window.location.port;
     return `${window.location.protocol}//${window.location.hostname}:${port}`;
   }
-  return window.location.origin;
+  return 'https://hub-8nyq.onrender.com';
 };
