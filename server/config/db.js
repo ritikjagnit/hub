@@ -1,16 +1,30 @@
 const { PrismaClient } = require('@prisma/client');
-const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
-const dbPath = path.resolve(__dirname, 'project.db');
+const resolveDbPath = () => {
+  const p1 = path.resolve(__dirname, '../project.db');
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.resolve(__dirname, 'project.db');
+  if (fs.existsSync(p2)) return p2;
+  return p1;
+};
 
-// Ensure DATABASE_URL is set for Prisma's internal validation
+const dbPath = resolveDbPath();
+
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "file:" + dbPath;
 }
 
-const adapter = new PrismaBetterSqlite3({ url: "file:" + dbPath });
-const prisma = new PrismaClient({ adapter });
+let prisma;
+try {
+  const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
+  const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
+  prisma = new PrismaClient({ adapter });
+} catch (err) {
+  console.warn('[DB Config] Adapter fallback to standard PrismaClient:', err.message);
+  prisma = new PrismaClient();
+}
 
 module.exports = prisma;
