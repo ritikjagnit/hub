@@ -1,17 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
-const fs = require('fs');
 require('dotenv').config();
 
-const resolveDbPath = () => {
-  const p1 = path.resolve(__dirname, '../project.db');
-  if (fs.existsSync(p1)) return p1;
-  const p2 = path.resolve(__dirname, 'project.db');
-  if (fs.existsSync(p2)) return p2;
-  return p1;
-};
-
-const dbPath = resolveDbPath();
+// Ensure single authoritative path to server/project.db
+const dbPath = path.resolve(__dirname, '../project.db');
 process.env.DATABASE_URL = "file:" + dbPath;
 
 let prisma;
@@ -20,7 +12,7 @@ try {
   const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL });
   prisma = new PrismaClient({ adapter });
 } catch (err) {
-  console.warn('[DB Config] Adapter fallback to standard PrismaClient:', err.message);
+  console.warn('[DB Config] Fallback to standard PrismaClient:', err.message);
   prisma = new PrismaClient();
 }
 
