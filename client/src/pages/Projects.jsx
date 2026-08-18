@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Folder, Plus, Calendar, UserCheck, Trash2, Edit2, Upload, FileText, X } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/socket';
 
 const Projects = () => {
   const { user, token } = useAuth();
@@ -40,7 +41,7 @@ const Projects = () => {
       fetchProjects();
       fetchTeamList();
 
-      socketRef.current = io(import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+      socketRef.current = io(getSocketUrl());
       
       socketRef.current.on('project_created', () => {
         fetchProjects();

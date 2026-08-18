@@ -4,14 +4,24 @@ import { useAuth } from '../context/AuthContext';
 import { Plus, Calendar, User, Trash2, AlertCircle, X, Eye, BarChart2, TrendingUp, CheckCircle2, Clock, Zap } from 'lucide-react';
 import { DndContext, useDraggable, useDroppable, closestCorners } from '@dnd-kit/core';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/socket';
 
 const DroppableColumn = ({ id, title, color, count, onAddTask, children }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <div ref={setNodeRef} className="kanban-column" style={{ background: isOver ? 'hsla(190, 90%, 50%, 0.1)' : undefined, transition: 'background 0.2s' }}>
-      <div className="column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="column-title" style={{ color }}>
-          <AlertCircle size={16} /> {title}
+    <div 
+      ref={setNodeRef} 
+      className="kanban-column" 
+      style={{ 
+        borderTop: `3px solid ${color}`,
+        background: isOver ? 'hsla(190, 90%, 50%, 0.08)' : undefined, 
+        borderColor: isOver ? color : undefined,
+        transition: 'background 0.2s, border-color 0.2s' 
+      }}
+    >
+      <div className="column-header">
+        <span className="column-title" style={{ color, fontSize: '0.92rem' }}>
+          <AlertCircle size={15} /> {title}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="task-count-badge">{count}</span>
@@ -20,13 +30,13 @@ const DroppableColumn = ({ id, title, color, count, onAddTask, children }) => {
             style={{
               background: 'hsla(220, 20%, 25%, 0.6)',
               border: '1px solid hsl(var(--border-glass))',
-              borderRadius: '4px',
+              borderRadius: '6px',
               color: '#fff',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px',
+              padding: '4px 6px',
               transition: 'all 0.2s'
             }}
             title={`Add task to ${title}`}
@@ -35,7 +45,9 @@ const DroppableColumn = ({ id, title, color, count, onAddTask, children }) => {
           </button>
         </div>
       </div>
-      {children}
+      <div className="kanban-column-cards">
+        {children}
+      </div>
     </div>
   );
 };
@@ -46,27 +58,52 @@ const DraggableTask = ({ task, isManager, handleDeleteTask, handleStatusChange, 
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: isDragging ? 100 : 1,
     opacity: isDragging ? 0.8 : 1,
-    boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.4)' : undefined,
+    boxShadow: isDragging ? '0 12px 32px rgba(0,0,0,0.5)' : undefined,
   } : undefined;
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} className="glass-panel task-card kanban-task">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span className={`task-priority-badge priority-${task.priority}`}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <span className={`task-priority-badge priority-${task.priority}`} style={{ marginBottom: 0 }}>
           {task.priority}
         </span>
         {isManager && (
-          <button onPointerDown={(e) => e.stopPropagation()} onClick={() => handleDeleteTask(task.id)} className="btn btn-danger" style={{ padding: '4px', minWidth: '24px' }} title="Delete">
+          <button onPointerDown={(e) => e.stopPropagation()} onClick={() => handleDeleteTask(task.id)} className="btn btn-danger" style={{ padding: '4px 6px', borderRadius: '6px' }} title="Delete task">
             <Trash2 size={12} />
           </button>
         )}
       </div>
-      <div style={{ marginBottom: '12px' }}>
-        <h4 style={{ fontSize: '0.95rem', fontWeight: '600', marginBottom: '4px', color: 'hsl(var(--text-main))' }}>{task.title}</h4>
-        <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', lineHeight: 1.4 }}>{task.description}</p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-          <span style={{ fontSize: '0.7rem', color: 'hsl(var(--accent-cyan))', fontWeight: '600' }}>
-            Project: {task.project_name}
+      <div style={{ marginBottom: '12px', minWidth: 0 }}>
+        <h4 style={{ 
+          fontSize: '0.95rem', 
+          fontWeight: '600', 
+          marginBottom: '4px', 
+          color: 'hsl(var(--text-main))',
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
+          lineHeight: 1.35
+        }}>
+          {task.title}
+        </h4>
+        {task.description && (
+          <p style={{ 
+            fontSize: '0.8rem', 
+            color: 'hsl(var(--text-muted))', 
+            lineHeight: 1.45,
+            wordBreak: 'break-word',
+            overflowWrap: 'anywhere',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            margin: '4px 0 8px'
+          }}>
+            {task.description}
+          </p>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.72rem', color: 'hsl(var(--accent-cyan))', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+            Project: {task.project_name || `ID ${task.project_id}`}
           </span>
           {task.project_status && (
             <span className={`status-badge status-${task.project_status}`} style={{ fontSize: '0.6rem', padding: '2px 6px', background: 'hsla(220, 20%, 25%, 0.5)', border: '1px solid hsl(var(--border-glass))' }}>
@@ -76,14 +113,18 @@ const DraggableTask = ({ task, isManager, handleDeleteTask, handleStatusChange, 
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid hsl(var(--border-glass))', paddingTop: '10px', fontSize: '0.75rem', color: 'hsl(var(--text-muted))', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <User size={12} />
-          <span>{task.assigned_to_name || 'Unassigned'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+          <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'linear-gradient(135deg, hsl(var(--accent-blue)), hsl(var(--accent-purple)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: '800', color: '#fff', flexShrink: 0 }}>
+            {(task.assigned_to_name || 'U').charAt(0).toUpperCase()}
+          </div>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '110px' }}>
+            {task.assigned_to_name || 'Unassigned'}
+          </span>
         </div>
         {task.due_date && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
             <Calendar size={12} />
-            <span>{task.due_date}</span>
+            <span>{new Date(task.due_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
           </div>
         )}
       </div>
@@ -92,7 +133,7 @@ const DraggableTask = ({ task, isManager, handleDeleteTask, handleStatusChange, 
           value={task.status} 
           onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => handleStatusChange(task.id, e.target.value)}
-          style={{ fontSize: '0.75rem', padding: '4px 6px', background: 'hsla(220, 20%, 25%, 0.4)', cursor: 'pointer', border: '1px solid hsl(var(--border-glass))' }}
+          style={{ fontSize: '0.75rem', padding: '4px 6px', background: 'hsla(220, 20%, 25%, 0.4)', cursor: 'pointer', border: '1px solid hsl(var(--border-glass))', borderRadius: '6px', flex: 1, minWidth: 0 }}
         >
           <option value="pending">Pending</option>
           <option value="in_progress">In Progress</option>
@@ -103,7 +144,7 @@ const DraggableTask = ({ task, isManager, handleDeleteTask, handleStatusChange, 
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => handleOpenComments(task)} 
           className="btn btn-secondary" 
-          style={{ padding: '4px 8px', fontSize: '0.75rem', gap: '4px' }}
+          style={{ padding: '4px 8px', fontSize: '0.75rem', gap: '4px', flexShrink: 0 }}
         >
           <Eye size={12} /> Details
         </button>
@@ -152,7 +193,7 @@ const Tasks = () => {
       fetchProjects();
       fetchTeamList();
 
-      socketRef.current = io(import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+      socketRef.current = io(getSocketUrl());
       
       socketRef.current.on('task_created', () => {
         fetchTasks();
@@ -185,7 +226,11 @@ const Tasks = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setProjects(await res.json());
+        const data = await res.json();
+        setProjects(data);
+        if (data.length > 0) {
+          setTaskProjectId(prev => prev || data[0].id.toString());
+        }
       }
     } catch (err) {
       console.error(err);
@@ -377,7 +422,7 @@ const Tasks = () => {
     setTaskPriority('medium');
     setTaskDueDate('');
     setTaskAssignedTo('');
-    setTaskProjectId('');
+    setTaskProjectId(projects.length > 0 ? projects[0].id.toString() : '');
     setTaskStatus(defaultStatus);
   };
 
@@ -769,41 +814,58 @@ const Tasks = () => {
 
           {/* Kanban Board Container */}
           <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-            <div className="kanban-board">
-              {columns.map(col => {
-                const colTasks = tasks.filter(t => t.status === col.id);
-                
-                return (
-                  <DroppableColumn 
-                    key={col.id} 
-                    id={col.id} 
-                    title={col.title} 
-                    color={col.color} 
-                    count={colTasks.length}
-                    onAddTask={(status) => {
-                      resetForm(status);
-                      setIsCreateModalOpen(true);
-                    }}
-                  >
-                    {colTasks.length === 0 ? (
-                      <div style={{ padding: '24px 12px', border: '1px dashed hsl(var(--border-glass))', borderRadius: '8px', textAlign: 'center', color: 'hsl(var(--text-muted))', fontSize: '0.8rem' }}>
-                        Drop tasks here
-                      </div>
-                    ) : (
-                      colTasks.map(task => (
-                        <DraggableTask 
-                          key={task.id} 
-                          task={task} 
-                          isManager={canDeleteTask} 
-                          handleDeleteTask={handleDeleteTask} 
-                          handleStatusChange={handleStatusChange} 
-                          handleOpenComments={handleOpenComments} 
-                        />
-                      ))
-                    )}
-                  </DroppableColumn>
-                );
-              })}
+            <div className="kanban-board-container">
+              <div className="kanban-board">
+                {columns.map(col => {
+                  const colTasks = tasks.filter(t => t.status === col.id);
+                  
+                  return (
+                    <DroppableColumn 
+                      key={col.id} 
+                      id={col.id} 
+                      title={col.title} 
+                      color={col.color} 
+                      count={colTasks.length}
+                      onAddTask={(status) => {
+                        resetForm(status);
+                        setIsCreateModalOpen(true);
+                      }}
+                    >
+                      {colTasks.length === 0 ? (
+                        <div style={{ 
+                          padding: '30px 16px', 
+                          border: '2px dashed hsl(var(--border-glass))', 
+                          borderRadius: '10px', 
+                          textAlign: 'center', 
+                          color: 'hsl(var(--text-muted))', 
+                          fontSize: '0.8rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          background: 'hsla(220, 20%, 18%, 0.2)',
+                          minHeight: '120px'
+                        }}>
+                          <Clock size={18} style={{ opacity: 0.5 }} />
+                          <span>No tasks in {col.title}</span>
+                        </div>
+                      ) : (
+                        colTasks.map(task => (
+                          <DraggableTask 
+                            key={task.id} 
+                            task={task} 
+                            isManager={canDeleteTask} 
+                            handleDeleteTask={handleDeleteTask} 
+                            handleStatusChange={handleStatusChange} 
+                            handleOpenComments={handleOpenComments} 
+                          />
+                        ))
+                      )}
+                    </DroppableColumn>
+                  );
+                })}
+              </div>
             </div>
           </DndContext>
         </>

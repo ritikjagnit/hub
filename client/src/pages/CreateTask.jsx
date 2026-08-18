@@ -33,7 +33,11 @@ const CreateTask = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setProjects(await res.json());
+        const data = await res.json();
+        setProjects(data);
+        if (data.length > 0) {
+          setProjectId(prev => prev || data[0].id.toString());
+        }
       }
     } catch (err) {
       console.error(err);

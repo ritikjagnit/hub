@@ -248,29 +248,48 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Kanban Boards */
+.kanban-board-container {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, minmax(270px, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+  min-width: 1140px;
 }
 
 .kanban-column {
-  background: hsla(222, 22%, 13%, 0.5);
-  border-radius: 12px;
+  background: hsla(222, 22%, 13%, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
   border: 1px solid hsl(var(--border-glass));
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  max-height: 75vh;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: var(--transition-smooth);
 }
 
 .column-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid hsl(var(--border-glass));
+  flex-shrink: 0;
 }
 
 .column-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -285,9 +304,31 @@ input:focus, select:focus, textarea:focus {
   color: hsl(var(--text-muted));
 }
 
+.kanban-column-cards {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 120px;
+}
+
 .task-card {
   padding: 16px;
-  margin-bottom: 12px;
+  border-radius: 12px;
+  background: hsla(222, 22%, 16%, 0.6);
+  border: 1px solid hsl(var(--border-glass));
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  border-color: hsla(190, 90%, 50%, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .task-priority-badge {
@@ -597,8 +638,8 @@ tr:hover td {
 
   /* Kanban board: horizontal scroll on mobile */
   .kanban-board {
-    grid-template-columns: repeat(4, minmax(240px, 1fr));
-    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(260px, 1fr));
+    min-width: 1080px;
     padding-bottom: 12px;
   }
 

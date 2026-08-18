@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Folder, Calendar, Users, ListTodo, FileText, Upload, Plus, Edit2, Trash2, ArrowLeft, CheckCircle2, UserCheck, Clock, AlertTriangle, Activity, DollarSign, Receipt, TrendingUp, TrendingDown, History, FolderPlus, File, Download, Eye, X } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/socket';
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -70,7 +71,7 @@ const ProjectDetails = () => {
       fetchTeamList();
       fetchBillingData();
 
-      socketRef.current = io(import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+      socketRef.current = io(getSocketUrl());
       socketRef.current.on('task_created', (task) => {
         if (task.project_id === parseInt(id)) {
           fetchProjectDetails();

@@ -90,10 +90,13 @@ exports.getProjectById = async (req, res) => {
 
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    // Validate that project manager's domain matches requester's domain
-    const userDomain = req.user.email.split('@')[1];
-    const projectManagerEmail = project.Users?.email || '';
-    if (!projectManagerEmail.endsWith(`@${userDomain}`)) {
+    // Validate project access: Admin/PM or assigned manager or project member
+    const { id: userId, role } = req.user;
+    const isManager = project.manager_id === userId;
+    const isMember = project.ProjectMembers.some(pm => pm.user_id === userId);
+    const isAdminOrPM = role === 'admin' || role === 'project_manager';
+
+    if (!isAdminOrPM && !isManager && !isMember) {
       return res.status(403).json({ message: 'Access denied to this workspace project.' });
     }
 
@@ -208,6 +211,8 @@ exports.assignTeam = async (req, res) => {
     return res.status(400).json({ message: 'user_ids must be an array' });
   }
 
+  const cleanUserIds = user_ids.map(uid => parseInt(uid)).filter(uid => !isNaN(uid));
+
   try {
     // Delete existing members using transaction
     await prisma.$transaction(async (tx) => {
@@ -215,11 +220,11 @@ exports.assignTeam = async (req, res) => {
         where: { project_id: parseInt(id) }
       });
 
-      if (user_ids.length > 0) {
+      if (cleanUserIds.length > 0) {
         await tx.projectMembers.createMany({
-          data: user_ids.map(uid => ({
+          data: cleanUserIds.map(uid => ({
             project_id: parseInt(id),
-            user_id: parseInt(uid)
+            user_id: uid
           }))
         });
       }

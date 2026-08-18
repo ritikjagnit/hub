@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const logs = await response.json();
-          const today = new Date().toISOString().split('T')[0];
+          const today = new Date().toLocaleDateString('sv-SE');
           const todayLog = logs.find(l => l.date === today);
           if (todayLog) {
             setAttendance({

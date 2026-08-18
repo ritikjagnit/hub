@@ -84,9 +84,17 @@ exports.updateSystemSettings = (req, res) => {
 
 // ────────── Backup & Restore ──────────
 
+const getDatabaseFilePath = () => {
+  const primaryPath = path.resolve(__dirname, '../project.db');
+  if (fs.existsSync(primaryPath)) return primaryPath;
+  const secondaryPath = path.resolve(__dirname, '../config/project.db');
+  if (fs.existsSync(secondaryPath)) return secondaryPath;
+  return primaryPath;
+};
+
 exports.backupDatabase = async (req, res) => {
   try {
-    const dbPath = path.resolve(__dirname, '../config/project.db');
+    const dbPath = getDatabaseFilePath();
     const backupDir = path.resolve(__dirname, '../backups');
 
     if (!fs.existsSync(backupDir)) {
@@ -124,7 +132,7 @@ exports.restoreDatabase = async (req, res) => {
   }
 
   try {
-    const dbPath = path.resolve(__dirname, '../config/project.db');
+    const dbPath = getDatabaseFilePath();
     const backupPath = path.resolve(__dirname, '../backups', filename);
 
     if (!fs.existsSync(backupPath)) {

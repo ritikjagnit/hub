@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertCircle, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/socket';
 
 
 const CalendarPage = () => {
@@ -16,7 +17,7 @@ const CalendarPage = () => {
     if (token) {
       fetchData();
       
-      const socket = io(import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+      const socket = io(getSocketUrl());
       
       socket.on('project_created', () => fetchData());
       socket.on('project_deleted', () => fetchData());

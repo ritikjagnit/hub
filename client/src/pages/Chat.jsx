@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, Calendar, Bell, Send, Users, AlertTriangle, Pencil, Trash2, Check, X } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../config/socket';
 
 // Returns a friendly label for a given date
 const getDateLabel = (dateStr) => {
@@ -61,7 +62,7 @@ const Chat = () => {
   const editInputRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io(import.meta.env.DEV ? 'http://localhost:5000' : window.location.origin);
+    socketRef.current = io(getSocketUrl());
     socketRef.current.on('receive_message', () => fetchMessages());
     return () => { if (socketRef.current) socketRef.current.disconnect(); };
   }, []);
