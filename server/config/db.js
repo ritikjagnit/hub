@@ -12,10 +12,7 @@ const resolveDbPath = () => {
 };
 
 const dbPath = resolveDbPath();
-
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "file:" + dbPath;
-}
+process.env.DATABASE_URL = "file:" + dbPath;
 
 let prisma;
 try {
