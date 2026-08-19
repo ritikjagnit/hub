@@ -264,7 +264,7 @@ exports.addTeamMember = async (req, res) => {
     const origin = req.headers.origin || req.get('origin') || 'http://localhost:5173';
 
     // Fire email notification
-    sendTeamAddedEmail(updatedUser.email, updatedUser.username, updatedUser.role, null, origin);
+    await sendTeamAddedEmail(updatedUser.email, updatedUser.username, updatedUser.role, null, origin);
 
     res.json({
       message: `Member ${updatedUser.username} (${updatedUser.email}) added to team successfully. Notification email sent!`,
@@ -309,7 +309,7 @@ exports.addMemberByEmail = async (req, res) => {
         select: { id: true, username: true, email: true, role: true }
       });
 
-      sendTeamAddedEmail(cleanEmail, updatedUser.username, targetRole, password ? plainPassword : null, origin);
+      await sendTeamAddedEmail(cleanEmail, updatedUser.username, targetRole, password ? plainPassword : null, origin);
 
       return res.status(200).json({
         message: `${updatedUser.username} (${cleanEmail}) added to team successfully. Email notification sent!`,
@@ -329,7 +329,7 @@ exports.addMemberByEmail = async (req, res) => {
       select: { id: true, username: true, email: true, role: true }
     });
 
-    sendTeamAddedEmail(cleanEmail, newUser.username, targetRole, plainPassword, origin);
+    await sendTeamAddedEmail(cleanEmail, newUser.username, targetRole, plainPassword, origin);
 
     return res.status(200).json({
       message: `User ${cleanEmail} added to team successfully. Credentials emailed!`,

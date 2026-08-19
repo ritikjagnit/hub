@@ -2,16 +2,18 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+const cleanVal = (v) => v ? v.toString().replace(/^["']|["']$/g, '').trim() : '';
+const cleanPass = (v) => v ? v.toString().replace(/^["']|["']$/g, '').replace(/\s+/g, '').trim() : '';
+
 const createTransporter = async () => {
-  const user = (process.env.SMTP_EMAIL || '').trim();
-  const pass = (process.env.SMTP_PASSWORD || '').replace(/\s+/g, '');
+  const user = cleanVal(process.env.SMTP_EMAIL);
+  const pass = cleanPass(process.env.SMTP_PASSWORD);
 
   if (user && pass) {
     return nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // Use SSL for 100% reliable cloud delivery
-      auth: { user, pass }
+      service: 'gmail',
+      auth: { user, pass },
+      tls: { rejectUnauthorized: false }
     });
   } else {
     // Fallback to test ethereal account
@@ -35,7 +37,7 @@ const sendEmail = async ({ to, subject, html }) => {
   }
 
   const cleanTo = (Array.isArray(to) ? to.join(',') : to).trim().toLowerCase();
-  const user = (process.env.SMTP_EMAIL || '').trim();
+  const user = cleanVal(process.env.SMTP_EMAIL);
 
   try {
     const transporter = await createTransporter();
