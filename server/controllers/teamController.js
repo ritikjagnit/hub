@@ -263,8 +263,8 @@ exports.addTeamMember = async (req, res) => {
 
     const origin = req.headers.origin || req.get('origin') || 'http://localhost:5173';
 
-    // Fire email notification
-    await sendTeamAddedEmail(updatedUser.email, updatedUser.username, updatedUser.role, null, origin);
+    // Fire email notification in background for instant UI response
+    sendTeamAddedEmail(updatedUser.email, updatedUser.username, updatedUser.role, null, origin).catch(err => console.error('[Email Error]:', err));
 
     res.json({
       message: `Member ${updatedUser.username} (${updatedUser.email}) added to team successfully. Notification email sent!`,
@@ -309,7 +309,7 @@ exports.addMemberByEmail = async (req, res) => {
         select: { id: true, username: true, email: true, role: true }
       });
 
-      await sendTeamAddedEmail(cleanEmail, updatedUser.username, targetRole, password ? plainPassword : null, origin);
+      sendTeamAddedEmail(cleanEmail, updatedUser.username, targetRole, password ? plainPassword : null, origin).catch(err => console.error('[Email Error]:', err));
 
       return res.status(200).json({
         message: `${updatedUser.username} (${cleanEmail}) added to team successfully. Email notification sent!`,
@@ -329,7 +329,7 @@ exports.addMemberByEmail = async (req, res) => {
       select: { id: true, username: true, email: true, role: true }
     });
 
-    await sendTeamAddedEmail(cleanEmail, newUser.username, targetRole, plainPassword, origin);
+    sendTeamAddedEmail(cleanEmail, newUser.username, targetRole, plainPassword, origin).catch(err => console.error('[Email Error]:', err));
 
     return res.status(200).json({
       message: `User ${cleanEmail} added to team successfully. Credentials emailed!`,

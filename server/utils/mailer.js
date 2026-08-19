@@ -16,17 +16,13 @@ const createTransporter = async () => {
       tls: { rejectUnauthorized: false }
     });
   } else {
-    // Fallback to test ethereal account
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
+    // Instant mock transporter — prevents slow external network calls when credentials are absent
+    return {
+      sendMail: async (mailOptions) => {
+        console.log(`[Mailer Mock] Skipped sending real mail to ${mailOptions.to}: SMTP credentials missing`);
+        return { messageId: 'mock-mail-id' };
       }
-    });
+    };
   }
 };
 
@@ -54,7 +50,6 @@ const sendEmail = async ({ to, subject, html }) => {
     return info;
   } catch (error) {
     console.error(`[Mailer Error] Failed to deliver email to ${cleanTo}:`, error.message);
-    // Don't throw error to prevent breaking background API flows
     return null;
   }
 };
