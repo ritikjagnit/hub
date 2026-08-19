@@ -203,6 +203,8 @@ exports.deleteProject = async (req, res) => {
   }
 };
 
+const { sendEmail } = require('../utils/mailer');
+
 exports.assignTeam = async (req, res) => {
   const { id } = req.params; // project_id
   const { user_ids } = req.body; // array of user IDs
@@ -230,7 +232,38 @@ exports.assignTeam = async (req, res) => {
       }
     });
 
-    res.json({ message: 'Project team assigned successfully' });
+    // Send email notification to assigned project members
+    if (cleanUserIds.length > 0) {
+      const project = await prisma.projects.findUnique({ where: { id: parseInt(id) } });
+      const assignedUsers = await prisma.users.findMany({
+        where: { id: { in: cleanUserIds } },
+        select: { username: true, email: true }
+      });
+      const origin = req.headers.origin || req.get('origin') || 'https://hub.pages.dev';
+
+      for (const u of assignedUsers) {
+        if (u.email) {
+          sendEmail({
+            to: u.email,
+            subject: `Assigned to Project: ${project?.name || 'Project'}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 24px; border-radius: 8px; background-color: #ffffff; color: #333333;">
+                <h2 style="color: #06b6d4; margin-top: 0;">Project Assignment</h2>
+                <p>Hi <strong>${u.username}</strong>,</p>
+                <p>You have been assigned as a team member to project <strong>${project?.name || 'N/A'}</strong>.</p>
+                <div style="margin: 20px 0;">
+                  <a href="${origin}/projects" style="background-color: #06b6d4; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Project</a>
+                </div>
+                <hr style="border: none; border-top: 1px solid #f1f3f4; margin: 24px 0;" />
+                <p style="color: #666666; font-size: 12px;">This is an automated notification from the Project Management System.</p>
+              </div>
+            `
+          }).catch(err => console.error("Failed sending project assignment email", err));
+        }
+      }
+    }
+
+    res.json({ message: 'Project team assigned successfully. Notification emails sent!' });
   } catch (err) {
     res.status(500).json({ message: 'Database error assigning team: ' + err.message });
   }

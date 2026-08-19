@@ -212,7 +212,7 @@ exports.inviteMember = async (req, res) => {
     });
 
     // Send email invitation link
-    const origin = req.headers.origin || req.get('origin') || 'http://localhost:5173';
+    const origin = req.headers.origin || req.get('origin') || 'https://hub.pages.dev';
     const inviteUrl = `${origin}/invite/join/${token}`;
     
     console.log(`\n=============================================`);
